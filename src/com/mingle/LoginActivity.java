@@ -9,7 +9,6 @@ import android.app.ProgressDialog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.Menu;
 import android.view.View;
 import android.widget.Button;
 
@@ -27,7 +26,18 @@ public class LoginActivity extends Activity {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_login);
+			
+		ParseUser currentUser = ParseUser.getCurrentUser();
+		if((currentUser != null) && ParseFacebookUtils.isLinked(currentUser)) {
+			currentUser.put("mingling", false);
+			try {
+				currentUser.save();
+			} catch (ParseException e) {
 				
+			}
+			startMainActivity();
+		}
+		
 		loginButton = (Button) findViewById(R.id.loginButton);
 		loginButton.setOnClickListener(new View.OnClickListener() {
 			@Override
@@ -35,17 +45,6 @@ public class LoginActivity extends Activity {
 				onLoginButtonClicked();
 			}
 		});
-		
-		ParseUser currentUser = ParseUser.getCurrentUser();
-		if((currentUser != null) && ParseFacebookUtils.isLinked(currentUser)) {
-			showMainActivity();
-		}
-	}
-	
-	@Override
-	public boolean onCreateOptionsMenu(Menu menu) {
-		getMenuInflater().inflate(R.menu.main, menu);
-		return true;
 	}
 	
 	@Override
@@ -56,10 +55,9 @@ public class LoginActivity extends Activity {
 	
 	private void onLoginButtonClicked() {
 		LoginActivity.this.progressDialog = ProgressDialog.show(
-				LoginActivity.this, "", "Loggin in...", true);
+				LoginActivity.this, "", "Logging in...", true);
 		
-		List<String> permissions = Arrays.asList("basic_info", "user_about_me", 
-				"user_birthday", "user_location");
+		List<String> permissions = Arrays.asList("basic_info", "user_birthday", "user_location");
 		
 		ParseFacebookUtils.logIn(permissions, this, new LogInCallback() {
 			@Override
@@ -71,17 +69,17 @@ public class LoginActivity extends Activity {
 				} else if(user.isNew()) {
 					Log.d(MingleApplication.TAG,
 							"User signed up and logged in through Facebook!");
-					showMainActivity();
+					startMainActivity();
 				} else {
 					Log.d(MingleApplication.TAG,
 							"User logged in through Facebook!");
-					showMainActivity();
+					startMainActivity();
 				}
 			}
 		});
 	}
 	
-	private void showMainActivity() {
+	private void startMainActivity() {
 		Intent intent = new Intent(this, MainActivity.class);
 		startActivity(intent);
 	}
