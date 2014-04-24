@@ -28,6 +28,8 @@ public class LoginActivity extends Activity {
 		setContentView(R.layout.activity_login);
 			
 		ParseUser currentUser = ParseUser.getCurrentUser();
+		
+		/* Checks to see if the user is already linked with Facebook */
 		if((currentUser != null) && ParseFacebookUtils.isLinked(currentUser)) {
 			currentUser.put("mingling", false);
 			try {
@@ -38,6 +40,7 @@ public class LoginActivity extends Activity {
 			startMainActivity();
 		}
 		
+		/* setting up the login button, giving it an onClickListener */
 		loginButton = (Button) findViewById(R.id.loginButton);
 		loginButton.setOnClickListener(new View.OnClickListener() {
 			@Override
@@ -54,15 +57,18 @@ public class LoginActivity extends Activity {
 	}
 	
 	private void onLoginButtonClicked() {
+		/* Just showing a progress dialog, really just for the user to make it look like
+		 * the app is doing something */
 		LoginActivity.this.progressDialog = ProgressDialog.show(
 				LoginActivity.this, "", "Logging in...", true);
 		
+		/* Asks them for permissions. we only want basic info, birthday, and location */
 		List<String> permissions = Arrays.asList("basic_info", "user_birthday", "user_location");
-		
 		ParseFacebookUtils.logIn(permissions, this, new LogInCallback() {
 			@Override
 			public void done(ParseUser user, ParseException e) {
 				LoginActivity.this.progressDialog.dismiss();
+				/* Handling the various errors that could happen */
 				if (user == null) {
 					Log.d(MingleApplication.TAG,
 							"Uh oh. The user cancelled the Facebook login.");
@@ -79,6 +85,7 @@ public class LoginActivity extends Activity {
 		});
 	}
 	
+	/* Starting the next activity after successful login. Goes to MainActivity */
 	private void startMainActivity() {
 		Intent intent = new Intent(this, MainActivity.class);
 		startActivity(intent);

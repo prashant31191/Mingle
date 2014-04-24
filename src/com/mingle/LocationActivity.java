@@ -28,19 +28,21 @@ public class LocationActivity extends Activity {
 		setContentView(R.layout.activity_location);
 		
 		mUser = ParseUser.getCurrentUser();
-		
 		pollUser();
 	}
 	
 	private void pollUser() {
 		final Handler handler = new Handler();
 		
+		/* Runs in the background until we find a match */
 		Runnable run = new Runnable() {
 			@Override
 			public void run() {
 				if (mParseUsers.size() < 1) {
 					findUser();
 					handler.postDelayed(this, 5000);
+				} else {
+					mUser.put("mingling", false);
 				}
 			}
 		};
@@ -49,20 +51,36 @@ public class LocationActivity extends Activity {
 	}
 	
 	private void findUser() {
-		ParseQuery<ParseObject> groupQuery = ParseQuery.getQuery("Group");
-		ArrayList<String> id = new ArrayList<String>();
-		id.add(mUser.getObjectId());
-		groupQuery.whereContainsAll("users", id);
-		
-		groupQuery.countInBackground(new CountCallback() {
-			public void done(int count, ParseException e) {
-				if (e == null) {
-					Log.d("count = " + count, "count = " + count);
+		/* We are querying the parse data base for other users.
+		 * We add a constraint so you won't match with yourself.
+		 * It finds other users in the background of the app */
+		ParseQuery<ParseObject> groupQuery = ParseQuery.getQuery("_User");
+		groupQuery.whereNotEqualTo("objectId", mUser.getObjectId());
+		groupQuery.findInBackground(new FindCallback<ParseObject>() {
+
+			@Override
+			public void done(List<ParseObject> list, ParseException e) {
+				if(e == null) {
+					/* This is just debugging stuff stuff, checking to see that shit works */
+					Log.d("list size = "+list.size(), "list size = "+list.size());
+					if(list.size() != 0) {						
+						Log.d("" + list.get(0).getObjectId(), "" + list.get(0).getObjectId());
+					}	
 				} else {
-					
+					e.printStackTrace();
 				}
-			}
+			}	
 		});
+	}
+	
+	@Override
+	protected void onDestroy() {
+		super.onDestroy();
+		ParseUser currentUser = ParseUser.getCurrentUser();
+		if (currentUser != null) {
+			currentUser.put("mingling", false);
+			currentUser.saveInBackground();
+		}
 	}
 	
 	

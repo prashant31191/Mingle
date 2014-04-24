@@ -28,9 +28,13 @@ public class MainActivity extends Activity {
 						
 		Session session = ParseFacebookUtils.getSession();
 		if (session != null && session.isOpened()) {
+			/* get the info we need */
 			makeMeRequest();
+		} else {
+			// error. do something about it
 		}
 		
+		/* setting up the start button with associated onClick */
 		startButton = (Button) findViewById(R.id.startButton);
 		startButton.setOnClickListener(new View.OnClickListener() {
 			@Override
@@ -43,12 +47,13 @@ public class MainActivity extends Activity {
 	private void makeMeRequest() {
 		Request request = Request.newMeRequest(ParseFacebookUtils.getSession(),
 				new Request.GraphUserCallback() {
-					
 					@Override
 					public void onCompleted(GraphUser user, Response response) {
 						if(user != null) {
 							JSONObject userProfile = new JSONObject();
 							try {
+								/* Gets all the information that we need from Facebook and stores
+								 * it into a ParseUser that we can access later. */
 								userProfile.put("facebookId", user.getId());
 								userProfile.put("firstName", user.getFirstName());
 								if(user.getLocation().getProperty("name") != null) {
@@ -62,6 +67,8 @@ public class MainActivity extends Activity {
 								}
 								
 								ParseUser currentUser = ParseUser.getCurrentUser();
+								currentUser.put("facebookId", user.getId());
+								currentUser.put("name", user.getName());
 								currentUser.put("profile", userProfile);
 								currentUser.saveInBackground();
 								
@@ -75,6 +82,8 @@ public class MainActivity extends Activity {
 	}
 		
 	private void onStartButtonClicked() {
+		/* Lets get mingling !! set the mingle flag to true to let all those 
+		 * singles out there that we are in fact ready to mingle */
 		ParseUser currentUser = ParseUser.getCurrentUser();
 		if(currentUser != null) {
 			currentUser.put("mingling", true);
@@ -85,6 +94,7 @@ public class MainActivity extends Activity {
 		startLocationActivity();
 	}
 	
+	/* Start the LocationActivity. this is where we will try to match the users */
 	private void startLocationActivity() {
 		Intent intent = new Intent(this, LocationActivity.class);
 		startActivity(intent);
