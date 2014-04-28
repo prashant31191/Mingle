@@ -23,6 +23,8 @@
         android:layout_height="wrap_content"
         android:layout_centerHorizontal="true"
         android:layout_centerVertical="true"
-        android:text="@string/login_button"/>
+        android:text="@string/login_button"
+        android:textColor="#fff"
+        android:background="@drawable/login_button"/>
 
 </RelativeLayout>

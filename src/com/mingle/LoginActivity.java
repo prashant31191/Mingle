@@ -9,6 +9,7 @@ import android.app.ProgressDialog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Menu;
 import android.view.View;
 import android.widget.Button;
 
@@ -19,35 +20,33 @@ import com.parse.ParseUser;
 
 public class LoginActivity extends Activity {
 
-	private Button loginButton;
 	private Dialog progressDialog;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_login);
-			
-		ParseUser currentUser = ParseUser.getCurrentUser();
-		
-		/* Checks to see if the user is already linked with Facebook */
-		if((currentUser != null) && ParseFacebookUtils.isLinked(currentUser)) {
-			currentUser.put("mingling", false);
-			try {
-				currentUser.save();
-			} catch (ParseException e) {
-				
-			}
-			startMainActivity();
-		}
 		
 		/* setting up the login button, giving it an onClickListener */
-		loginButton = (Button) findViewById(R.id.loginButton);
-		loginButton.setOnClickListener(new View.OnClickListener() {
+		((Button) findViewById(R.id.loginButton))
+			.setOnClickListener(new View.OnClickListener() {
 			@Override
 			public void onClick(View v) {
 				onLoginButtonClicked();
 			}
 		});
+		
+		/* Checks to see if the user is already linked with Facebook */
+		ParseUser currentUser = ParseUser.getCurrentUser();
+		if((currentUser != null) && ParseFacebookUtils.isLinked(currentUser)) {
+			startMainActivity();
+		}
+	}
+	
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		getMenuInflater().inflate(R.menu.main, menu);
+		return true;
 	}
 	
 	@Override
@@ -64,6 +63,7 @@ public class LoginActivity extends Activity {
 		
 		/* Asks them for permissions. we only want basic info, birthday, and location */
 		List<String> permissions = Arrays.asList("basic_info", "user_birthday", "user_location");
+		
 		ParseFacebookUtils.logIn(permissions, this, new LogInCallback() {
 			@Override
 			public void done(ParseUser user, ParseException e) {
@@ -87,7 +87,6 @@ public class LoginActivity extends Activity {
 	
 	/* Starting the next activity after successful login. Goes to MainActivity */
 	private void startMainActivity() {
-		Intent intent = new Intent(this, MainActivity.class);
-		startActivity(intent);
+		startActivity(new Intent(this, MainActivity.class));
 	}
 }
