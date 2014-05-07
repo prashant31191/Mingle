@@ -5,8 +5,10 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.app.Activity;
+import android.content.Context;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
+import android.util.AttributeSet;
 import android.util.Log;
 
 import com.parse.CountCallback;
@@ -20,6 +22,9 @@ import com.mingle.R;
 import com.oovoo.core.ConferenceCore;
 
 import android.view.SurfaceView;
+import android.view.View;
+import android.widget.LinearLayout;
+
 import com.oovoo.core.ConferenceCore.FrameSize;
 import com.oovoo.core.ConferenceCore.MediaDevice;
 import com.oovoo.core.IConferenceCore;
@@ -120,6 +125,9 @@ public  class LocationActivity extends Activity implements IConferenceCoreListen
 		});
 	}
 	
+
+	
+	
 	private void startConference() {		
     	
     	/* Initiating the conference */ 
@@ -141,14 +149,25 @@ public  class LocationActivity extends Activity implements IConferenceCoreListen
         		"MDAxMDAxAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB%2FOj%2Byd3iuFj%2BwgOGGjP1rL%2FTdnwapuUxDfjpUrxVfM%2Fp72b4x1RDU%2FElQz3Q3dVtD%2FnwJW1ZpKNB1ggkWbDrdeD%2F%2B%2FYeCcWyLgZ13k5kEE0zDXPHlrsMV3eRKfwA6FOM%3D",
         		"https://api-sdk.dev.oovoo.com/");
         try {
-			mConferenceCore.setContext(this);
+        	/* Kirk has to change it to this for it to work
+        	 * 			mConferenceCore.setContext(this);
+
+        	 */
+			mConferenceCore.setContext(getApplicationContext());
 		} catch (NullApplicationContext e1) {
 			e1.printStackTrace();
 		}
-		mConferenceCore.setListener((IConferenceCoreListener) this);
-        SurfaceView view = (SurfaceView) findViewById(R.id.sView);
-        GLSurfaceView glView = (GLSurfaceView) findViewById(R.id.userTwoVideoView);
+        /* for kirk
+			mConferenceCore.setListener((IConferenceCoreListener) this);
+		*/ 
         
+		/* for Steven */ 
+		mConferenceCore.setListener(this);
+
+		
+        SurfaceView view = (SurfaceView) findViewById(R.id.sView);
+	    GLSurfaceView glView = (GLSurfaceView) findViewById(R.id.userTwoVideoView); 
+
         /*Joining a conference */ 
         if( mConferenceCore.joinConference(conferenceID,
         	firstName,null) == ConferenceCoreError.OK) {
@@ -162,16 +181,23 @@ public  class LocationActivity extends Activity implements IConferenceCoreListen
         				
         			/* Might be a couple other things i need to do to Receive the participants video call */ 
         				 
-        			mConferenceCore.receiveParticipantVideoOn(firstName2);
-        			
+
         			/*Setting up the glView, grabbing the remote particpents video */ 
+        			
         	        VideoRenderer mRenderer = new com.oovoo.core.ui.VideoRenderer(glView);
         	        glView.setEGLContextClientVersion(2);
         	        glView.setRenderer(mRenderer);
+        	        //l.addView(glView,0);
+
         	        glView.setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
+        			mConferenceCore.receiveParticipantVideoOn(firstName2);
+
         	        VideoChannelPtr in = mConferenceCore.getVideoChannelForUser(firstName2);
+                	Log.d(MingleApplication.TAG, "IN CLASS, pid =  "+firstName2);        
+                	
         	        mRenderer.connect(in, firstName2);
-        	        
+        		    glView.setVisibility(View.VISIBLE);
+
 				} catch (NullApplicationContext e) {
     				System.out.println("Error detected!");
     				e.printStackTrace();
@@ -241,7 +267,10 @@ public  class LocationActivity extends Activity implements IConferenceCoreListen
 
 	public void OnParticipantJoinedConference(String arg0, String arg1) {
 		 /* When a participent joins the conference we set the global firstName2 = to their particpent ID */ 
-		 firstName2 = arg1; 
+		 firstName2 = arg0; 
+
+    	Log.d(MingleApplication.TAG, " PARTICIPENT ID = "+ arg0);        
+
 	}
 
 	
