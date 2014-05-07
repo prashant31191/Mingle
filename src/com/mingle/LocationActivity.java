@@ -5,7 +5,9 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.app.Activity;
+import android.opengl.GLSurfaceView;
 import android.os.Bundle;
+import android.util.Log;
 
 import com.parse.CountCallback;
 import com.parse.FindCallback;
@@ -18,36 +20,35 @@ import com.mingle.R;
 import com.oovoo.core.ConferenceCore;
 
 import android.view.SurfaceView;
-import android.content.Context;
-import android.util.Log;
 import com.oovoo.core.ConferenceCore.FrameSize;
 import com.oovoo.core.ConferenceCore.MediaDevice;
 import com.oovoo.core.IConferenceCore;
 import com.oovoo.core.IConferenceCore.ConferenceCoreError;
 import com.oovoo.core.IConferenceCore.ConnectionStatistics;
 import com.oovoo.core.IConferenceCoreListener;
+import com.oovoo.core.ClientCore.VideoChannelPtr;
 import com.oovoo.core.Exceptions.NullApplicationContext;
+import com.oovoo.core.ui.VideoRenderer;
+
 public  class LocationActivity extends Activity implements IConferenceCoreListener{
+	
 	private ParseUser mUser;
 	private ParseObject mConference;
 	private ParseQuery<ParseObject> matchQuery;
-	ConferenceCoreError errorCode; 
-    
-
-    
-    
-
-    protected void onCreate(Bundle savedInstanceState) {
-    	
-    super.onCreate( savedInstanceState);
-    setContentView(R.layout.video_call);
-    mUser = ParseUser.getCurrentUser();
+	ConferenceCoreError errorCode;
+	/* Global Variable for firstName2, recieved by listener method participent on joined */ 
+	public String firstName2; 
+	
+    protected void onCreate(Bundle savedInstanceState) {	
+    	super.onCreate(savedInstanceState);
+    	setContentView(R.layout.video_call);
+    	mUser = ParseUser.getCurrentUser();
 		if(mUser != null) {
 			findConference();
 		}
 	}
+    
 	private void findConference() {
-
 		matchQuery = ParseQuery.getQuery("Conference");
 		matchQuery.whereEqualTo("status", "waiting");
 		matchQuery.whereNotEqualTo("user1", mUser);
@@ -62,6 +63,7 @@ public  class LocationActivity extends Activity implements IConferenceCoreListen
 						@Override
 						public void done(List<ParseObject> confs, ParseException e) {
 							if (confs.size() > 0) {
+								mConference = confs.get(0);
 								lockConference();
 							} else {
 								createConference();
@@ -72,7 +74,6 @@ public  class LocationActivity extends Activity implements IConferenceCoreListen
 					createConference();
 				}
 			}
-			
 		});
 	}
 	
@@ -81,7 +82,7 @@ public  class LocationActivity extends Activity implements IConferenceCoreListen
 		mConference.saveInBackground(new SaveCallback() {
 			@Override
 			public void done(ParseException e) {
-				if(mConference.getInt("lock") <= 2) {
+				if(mConference.getInt("lock") <= 2) {				
 					mConference.put("user2", mUser);
 					mConference.put("status", "mingling");
 					mConference.saveInBackground(new SaveCallback() {
@@ -90,7 +91,6 @@ public  class LocationActivity extends Activity implements IConferenceCoreListen
 							try {
 								startConference();
 							} catch (Exception e1) {
-								// TODO Auto-generated catch block
 								e1.printStackTrace();
 							}
 						}
@@ -114,218 +114,179 @@ public  class LocationActivity extends Activity implements IConferenceCoreListen
 				try {
 					startConference();
 				} catch (Exception e1) {
-					// TODO Auto-generated catch block
 					e1.printStackTrace();
 				}
 			}
 		});
 	}
 	
-	private void startConference() throws Exception {
-		
-    	Context mApp = null;
+	private void startConference() {		
     	
     	/* Initiating the conference */ 
-    	mApp = getApplicationContext();
-    	IConferenceCore mConferenceCore = null;
-
+    	
 		String conferenceID = mConference.getObjectId();
 		String firstName = null;
 		JSONObject profile  = mUser.getJSONObject("profile");
 		try {
 			if (profile.getString("firstName") != null) {
 				firstName = profile.getString("firstName");
-			}
-
-			/* Start the video conference using the object ID and first name 
-			 * this is where Steven would take over I guess*/
-			
-			 
-			 /* Maybe should have placed my code HERE?*. 
-			
-			  */
-
+			}		
 		} catch (JSONException e) {
-			e.printStackTrace();
-		
+			e.printStackTrace();		
 		}
 		
-		
-
-		mConferenceCore = ConferenceCore.instance(mApp);
+		IConferenceCore mConferenceCore = ConferenceCore.instance(this);
         // Authenticating for use 
 		mConferenceCore.initSdk("12349983350851",
         		"MDAxMDAxAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB%2FOj%2Byd3iuFj%2BwgOGGjP1rL%2FTdnwapuUxDfjpUrxVfM%2Fp72b4x1RDU%2FElQz3Q3dVtD%2FnwJW1ZpKNB1ggkWbDrdeD%2F%2B%2FYeCcWyLgZ13k5kEE0zDXPHlrsMV3eRKfwA6FOM%3D",
         		"https://api-sdk.dev.oovoo.com/");
-        mConferenceCore.setContext(mApp);
+        try {
+			mConferenceCore.setContext(this);
+		} catch (NullApplicationContext e1) {
+			e1.printStackTrace();
+		}
 		mConferenceCore.setListener((IConferenceCoreListener) this);
-        SurfaceView view = (SurfaceView)findViewById(R.id.sView);
+        SurfaceView view = (SurfaceView) findViewById(R.id.sView);
+        GLSurfaceView glView = (GLSurfaceView) findViewById(R.id.userTwoVideoView);
         
         /*Joining a conference */ 
-     if( mConferenceCore.joinConference(conferenceID,
-        		firstName,null) == ConferenceCoreError.OK)
-        		{
-        			try {
-        				mConferenceCore.setPreviewSurface(view);
-        				mConferenceCore.turnMyVideoOn(); 
+        if( mConferenceCore.joinConference(conferenceID,
+        	firstName,null) == ConferenceCoreError.OK) {
+        		try {
+        			mConferenceCore.setPreviewSurface(view);
+        			mConferenceCore.turnMyVideoOn(); 
 
-        				mConferenceCore.turnMicrophoneOn();
-        				/* Need to figure out a way to use the OnParticipentJoinedConference method
-        				 * to grab the participent ID and place it here instead of Kirk */ 
+        			mConferenceCore.turnMicrophoneOn();
+        			/* Need to figure out a way to use the OnParticipentJoinedConference method
+        			 * to grab the participant ID and place it here instead of Kirk */ 
         				
-        				/* Might be a couple other things i need to do to Recieve the participents video call */ 
+        			/* Might be a couple other things i need to do to Receive the participants video call */ 
         				 
-        				mConferenceCore.receiveParticipantVideoOn("Kirk");
-					}
+        			mConferenceCore.receiveParticipantVideoOn(firstName2);
         			
-        			catch (NullApplicationContext e) {
-    					// TODO Auto-generated catch block
-    					System.out.println("Error detected!");
-    					e.printStackTrace();
-    				} 
-        		}
-     else 
-Log.d(MingleApplication.TAG,
-							"Problem Joining Conference");        
-    }
+        			/*Setting up the glView, grabbing the remote particpents video */ 
+        	        VideoRenderer mRenderer = new com.oovoo.core.ui.VideoRenderer(glView);
+        	        glView.setEGLContextClientVersion(2);
+        	        glView.setRenderer(mRenderer);
+        	        glView.setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
+        	        VideoChannelPtr in = mConferenceCore.getVideoChannelForUser(firstName2);
+        	        mRenderer.connect(in, firstName2);
+        	        
+				} catch (NullApplicationContext e) {
+    				System.out.println("Error detected!");
+    				e.printStackTrace();
+    			} catch (Exception e) {
+					e.printStackTrace();
+				} 
+        	}
+        else {
+        	Log.d(MingleApplication.TAG, "Problem Joining Conference");        
+        }
+     }
   
-
-    
     /**
      * A placeholder fragment containing a simple view.
      */
-   
-
-        
-
+	
 	public void OnCameraSelected(ConferenceCoreError arg0, String arg1,
 			String arg2) {
-		// TODO Auto-generated method stub
 		
 	}
 
 	public void OnConferenceError(ConferenceCoreError arg0) {
-		// TODO Auto-generated method stub
 		
 	}
 
 	public void OnConnectionStatisticsUpdate(ConnectionStatistics arg0) {
-		// TODO Auto-generated method stub
 		
 	}
 
-	
 	public void OnGetMediaDeviceList(MediaDevice[] arg0) {
-		// TODO Auto-generated method stub
-		
+			
 	}
-
 	
 	public void OnIncallMessage(byte[] arg0, String arg1) {
-		// TODO Auto-generated method stub
 		
 	}
 
 	public void OnJoinConference(ConferenceCoreError arg0, String arg1) {
-		// TODO Auto-generated method stub
 		
 	}
 
 	public void OnLeftConference(ConferenceCoreError arg0) {
-		// TODO Auto-generated method stub
 		
 	}
 
 	public void OnMicrophoneSelected(ConferenceCoreError arg0, String arg1,
 			String arg2) {
-		// TODO Auto-generated method stub
 		
 	}
 
 	public void OnMicrophoneTurnedOff(ConferenceCoreError arg0, String arg1) {
-		// TODO Auto-generated method stub
 		
 	}
 
 	public void OnMicrophoneTurnedOn(ConferenceCoreError arg0, String arg1) {
-		// TODO Auto-generated method stub
 		
 	}
 
 	public void OnMyVideoTurnedOff(ConferenceCoreError arg0) {
-		// TODO Auto-generated method stub
-		
+			
 	}
 
 	public void OnMyVideoTurnedOn(ConferenceCoreError arg0, FrameSize arg1,
 			int arg2) {
-		// TODO Auto-generated method stub
-		
+			
 	}
 
-	
 	public void OnParticipantJoinedConference(String arg0, String arg1) {
-		// TODO Auto-generated method stub
-		
+		 /* When a participent joins the conference we set the global firstName2 = to their particpent ID */ 
+		 firstName2 = arg1; 
 	}
 
 	
 	public void OnParticipantLeftConference(String arg0) {
-		// TODO Auto-generated method stub
 		
 	}
 
 	public void OnParticipantVideoPaused(String arg0) {
-		// TODO Auto-generated method stub
 		
 	}
 
 	public void OnParticipantVideoReceiveOff(ConferenceCoreError arg0,
 			String arg1) {
-		// TODO Auto-generated method stub
 		
 	}
 
-	
 	public void OnParticipantVideoReceiveOn(ConferenceCoreError arg0,
 			String arg1, FrameSize arg2) {
-		// TODO Auto-generated method stub
 		
 	}
 
 	public void OnParticipantVideoResumed(String arg0) {
-		// TODO Auto-generated method stub
 		
 	}
 
 	public void OnSpeakerSelected(ConferenceCoreError arg0, String arg1,
 			String arg2) {
-		// TODO Auto-generated method stub
 		
 	}
-
 	
 	public void OnSpeakerTurnedOff(ConferenceCoreError arg0, String arg1) {
-		// TODO Auto-generated method stub
-		
+			
 	}
-
 	
 	public void OnSpeakerTurnedOn(ConferenceCoreError arg0, String arg1) {
-		// TODO Auto-generated method stub
 		
 	}
 
-	
 	public void onPause() {
-		// TODO Auto-generated method stub
-		
+		super.onPause();
 	}
 
 	
 	public void onResume() {
-		// TODO Auto-generated method stub
-		
+		super.onResume();
 	}
 
 }
