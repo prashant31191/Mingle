@@ -40,6 +40,8 @@ public  class LocationActivity extends Activity implements IConferenceCoreListen
 	private ParseUser mUser;
 	private ParseObject mConference;
 	private ParseQuery<ParseObject> matchQuery;
+	private VideoRenderer mRenderer;
+	private IConferenceCore mConferenceCore;
 	ConferenceCoreError errorCode;
 	/* Global Variable for firstName2, recieved by listener method participent on joined */ 
 	public String firstName2; 
@@ -128,7 +130,7 @@ public  class LocationActivity extends Activity implements IConferenceCoreListen
 
 	
 	
-	private void startConference() {		
+	private void startConference() throws Exception {		
     	
     	/* Initiating the conference */ 
     	
@@ -142,32 +144,33 @@ public  class LocationActivity extends Activity implements IConferenceCoreListen
 		} catch (JSONException e) {
 			e.printStackTrace();		
 		}
-		
-		IConferenceCore mConferenceCore = ConferenceCore.instance(this);
+
+		mConferenceCore = ConferenceCore.instance(this);
         // Authenticating for use 
-		mConferenceCore.initSdk("12349983350851",
-        		"MDAxMDAxAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB%2FOj%2Byd3iuFj%2BwgOGGjP1rL%2FTdnwapuUxDfjpUrxVfM%2Fp72b4x1RDU%2FElQz3Q3dVtD%2FnwJW1ZpKNB1ggkWbDrdeD%2F%2B%2FYeCcWyLgZ13k5kEE0zDXPHlrsMV3eRKfwA6FOM%3D",
+		mConferenceCore.initSdk("12349983351091",
+        		"MDAxMDAxAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAye86PQ2KfCfJmHonCqsMY2YIqMhypD92ZB7iHRMjJ7dQsS8VZm7JOwxPiDSNYMkgR8XPcK0sHWSF6xH12LBS4EiHqWB5OiFxtnL4ZWFNN4KqfxlIQMTW%2FcR%2FdnusGwk%3D",
         		"https://api-sdk.dev.oovoo.com/");
         try {
         	/* Kirk has to change it to this for it to work
         	 * 			mConferenceCore.setContext(this);
 
         	 */
-			mConferenceCore.setContext(getApplicationContext());
+			mConferenceCore.setContext(this);
 		} catch (NullApplicationContext e1) {
 			e1.printStackTrace();
 		}
-        /* for kirk
+        /* for kirk */
 			mConferenceCore.setListener((IConferenceCoreListener) this);
-		*/ 
         
-		/* for Steven */ 
-		mConferenceCore.setListener(this);
+		/* for Steven 
+		mConferenceCore.setListener(this); */
 
 		
         SurfaceView view = (SurfaceView) findViewById(R.id.sView);
-	    GLSurfaceView glView = (GLSurfaceView) findViewById(R.id.userTwoVideoView); 
 
+	    Log.d("conference id = " + conferenceID, "conference id = " + conferenceID);
+	    
+	    
         /*Joining a conference */ 
         if( mConferenceCore.joinConference(conferenceID,
         	firstName,null) == ConferenceCoreError.OK) {
@@ -183,21 +186,6 @@ public  class LocationActivity extends Activity implements IConferenceCoreListen
         				 
 
         			/*Setting up the glView, grabbing the remote particpents video */ 
-        			
-        	        VideoRenderer mRenderer = new com.oovoo.core.ui.VideoRenderer(glView);
-        	        glView.setEGLContextClientVersion(2);
-        	        glView.setRenderer(mRenderer);
-        	        //l.addView(glView,0);
-
-        	        glView.setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
-        			mConferenceCore.receiveParticipantVideoOn(firstName2);
-
-        	        VideoChannelPtr in = mConferenceCore.getVideoChannelForUser(firstName2);
-                	Log.d(MingleApplication.TAG, "IN CLASS, pid =  "+firstName2);        
-                	
-        	        mRenderer.connect(in, firstName2);
-        		    glView.setVisibility(View.VISIBLE);
-
 				} catch (NullApplicationContext e) {
     				System.out.println("Error detected!");
     				e.printStackTrace();
@@ -266,11 +254,30 @@ public  class LocationActivity extends Activity implements IConferenceCoreListen
 	}
 
 	public void OnParticipantJoinedConference(String arg0, String arg1) {
-		 /* When a participent joins the conference we set the global firstName2 = to their particpent ID */ 
-		 firstName2 = arg0; 
+		 /* When a participent joins the conference we set the global firstName2 = to their particpent ID */ 	
+		firstName2 = arg0;
+		
+		runOnUiThread(new Runnable() {
+			@Override
+			public void run() {
+				GLSurfaceView glView = (GLSurfaceView) findViewById(R.id.userTwoVideoView); 
+				mRenderer = new com.oovoo.core.ui.VideoRenderer(glView);
+		        glView.setEGLContextClientVersion(2);
+		        glView.setRenderer(mRenderer);
+		        //l.addView(glView,0);
 
-    	Log.d(MingleApplication.TAG, " PARTICIPENT ID = "+ arg0);        
+		        glView.setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
 
+		    	Log.d(MingleApplication.TAG, " PARTICIPENT ID = "+ firstName2);       
+				mConferenceCore.receiveParticipantVideoOn(firstName2);
+
+		        VideoChannelPtr in = mConferenceCore.getVideoChannelForUser(firstName2);
+		    	Log.d(MingleApplication.TAG, "IN CLASS, pid =  "+firstName2);      
+		    	
+		        mRenderer.connect(in, firstName2);
+			    glView.setVisibility(View.VISIBLE);	
+			}
+		});
 	}
 
 	
