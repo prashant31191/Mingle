@@ -93,7 +93,7 @@ public class MainActivity extends Activity {
 	}
 		
 	private void onStartButtonClicked() {
-		startLocationActivity();
+		startConferenceActivity();
 	}
 	
 	private void onLogoutButtonClicked() {
@@ -102,8 +102,8 @@ public class MainActivity extends Activity {
 	}
 	
 	/* Start the LocationActivity. this is where we will try to match the users */
-	private void startLocationActivity() {
-		startActivity(new Intent(this, LocationActivity.class));
+	private void startConferenceActivity() {
+		startActivity(new Intent(this, ConferenceActivity.class));
 	}
 	
 	private void startLoginActivity() {
