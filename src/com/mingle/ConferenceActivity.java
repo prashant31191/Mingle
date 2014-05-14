@@ -6,7 +6,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.app.Activity;
-import android.content.Intent;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.util.Log;
@@ -45,27 +44,23 @@ public class ConferenceActivity extends Activity implements IConferenceCoreListe
 	
 	private SurfaceView sView;
 	private GLSurfaceView glView;
-	private Button endConference;
 	private String participantId;
 
-	
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_conference);
 	
 		sView = (SurfaceView) findViewById(R.id.mVideo);
 		glView = (GLSurfaceView) findViewById(R.id.uVideo);
-		mRenderer = new VideoRenderer(glView);
-		glView.setEGLContextClientVersion(2);
-		glView.setRenderer(mRenderer);
-		glView.setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
+						
 		((Button) findViewById(R.id.leaveButton))
-		.setOnClickListener(new View.OnClickListener() {
-		@Override
-		public void onClick(View v) {
-			onLeaveButtonClicked();
-		}
-	});
+			.setOnClickListener(new View.OnClickListener() {
+				@Override
+				public void onClick(View v) {
+					onLeaveButtonClicked();
+				}
+			});
+		
 		sView.setVisibility(View.INVISIBLE);
 		glView.setVisibility(View.INVISIBLE);
 		
@@ -79,6 +74,11 @@ public class ConferenceActivity extends Activity implements IConferenceCoreListe
 			
 		}
 		mConferenceCore.setListener(this);
+		
+		mRenderer = new VideoRenderer(glView);
+		glView.setEGLContextClientVersion(2);
+		glView.setRenderer(mRenderer);
+		glView.setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
 		
 		mUser = ParseUser.getCurrentUser();
 		if(mUser != null) {
