@@ -223,8 +223,6 @@ public class ConferenceActivity extends Activity implements IConferenceCoreListe
 		runOnUiThread(new Runnable() {
 			@Override
 			public void run() {
-				
-				
 				VideoChannelPtr in = mConferenceCore.getVideoChannelForUser(participantId);
 				mRenderer.connect(in, participantId);
 				glView.setVisibility(View.VISIBLE);	
@@ -260,14 +258,18 @@ public class ConferenceActivity extends Activity implements IConferenceCoreListe
 	@Override
 	public void OnLeftConference(ConferenceCoreError arg0) {
 		/* after we leave the conference, we should find a new one */ 
-
 		runOnUiThread(new Runnable() {
 			@Override
 			public void run() {
+				try {
+					mConference.delete();
+				} catch (ParseException e) {
+					/* doesn't exist, or no Internet */
+				}
 				glView.setVisibility(View.INVISIBLE);
 				findConference();
 			}
-		});			
+		});
 	}
 	
 	@Override
@@ -293,12 +295,7 @@ public class ConferenceActivity extends Activity implements IConferenceCoreListe
 	@Override
 	public void OnParticipantLeftConference(String arg0) {
 		/* If the other person leaves, we want to leave as well */ 
-		
-		mConferenceCore.leaveConference(ConferenceCoreError.OK);
-
-		
-
-		
+		mConferenceCore.leaveConference(ConferenceCoreError.OK);	
 	}
 
 	@Override
