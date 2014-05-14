@@ -52,12 +52,13 @@ public class ConferenceActivity extends Activity implements IConferenceCoreListe
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_conference);
+	
+		sView = (SurfaceView) findViewById(R.id.mVideo);
+		glView = (GLSurfaceView) findViewById(R.id.uVideo);
 		mRenderer = new VideoRenderer(glView);
 		glView.setEGLContextClientVersion(2);
 		glView.setRenderer(mRenderer);
 		glView.setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
-		sView = (SurfaceView) findViewById(R.id.mVideo);
-		glView = (GLSurfaceView) findViewById(R.id.uVideo);
 		((Button) findViewById(R.id.leaveButton))
 		.setOnClickListener(new View.OnClickListener() {
 		@Override
