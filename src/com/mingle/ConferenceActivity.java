@@ -6,11 +6,13 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.SurfaceView;
 import android.view.View;
+import android.widget.Button;
 
 import com.oovoo.core.ConferenceCore;
 import com.oovoo.core.ConferenceCore.FrameSize;
@@ -43,16 +45,26 @@ public class ConferenceActivity extends Activity implements IConferenceCoreListe
 	
 	private SurfaceView sView;
 	private GLSurfaceView glView;
-	
+	private Button endConference;
 	private String participantId;
 
 	
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_conference);
-	
+		mRenderer = new VideoRenderer(glView);
+		glView.setEGLContextClientVersion(2);
+		glView.setRenderer(mRenderer);
+		glView.setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
 		sView = (SurfaceView) findViewById(R.id.mVideo);
 		glView = (GLSurfaceView) findViewById(R.id.uVideo);
+		((Button) findViewById(R.id.leaveButton))
+		.setOnClickListener(new View.OnClickListener() {
+		@Override
+		public void onClick(View v) {
+			onLeaveButtonClicked();
+		}
+	});
 		sView.setVisibility(View.INVISIBLE);
 		glView.setVisibility(View.INVISIBLE);
 		
@@ -73,7 +85,12 @@ public class ConferenceActivity extends Activity implements IConferenceCoreListe
 		}
 	}	
 	
-	
+	private void onLeaveButtonClicked() {
+		mConferenceCore.leaveConference(ConferenceCoreError.OK);
+
+		
+	}
+
 	private void findConference() {
 		mQuery = ParseQuery.getQuery("Conference");
 		mQuery.whereEqualTo("status", "waiting");
@@ -173,6 +190,8 @@ public class ConferenceActivity extends Activity implements IConferenceCoreListe
 			try {
 				ConferenceCore.instance().turnMyVideoOn();
 				ConferenceCore.instance().turnMicrophoneOn();
+				ConferenceCore.instance().turnSpeakerOn();
+
 				ConferenceCore.instance().setPreviewSurface(sView);
 			} catch (Exception e1) {
 				Log.d(TAG, "video not turned on");
@@ -203,10 +222,7 @@ public class ConferenceActivity extends Activity implements IConferenceCoreListe
 		runOnUiThread(new Runnable() {
 			@Override
 			public void run() {
-				mRenderer = new VideoRenderer(glView);
-				glView.setEGLContextClientVersion(2);
-				glView.setRenderer(mRenderer);
-				glView.setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
+				
 				
 				VideoChannelPtr in = mConferenceCore.getVideoChannelForUser(participantId);
 				mRenderer.connect(in, participantId);
@@ -242,7 +258,15 @@ public class ConferenceActivity extends Activity implements IConferenceCoreListe
 
 	@Override
 	public void OnLeftConference(ConferenceCoreError arg0) {
-			
+		/* after we leave the conference, we should find a new one */ 
+
+		runOnUiThread(new Runnable() {
+			@Override
+			public void run() {
+				glView.setVisibility(View.INVISIBLE);
+				findConference();
+			}
+		});			
 	}
 	
 	@Override
@@ -267,6 +291,12 @@ public class ConferenceActivity extends Activity implements IConferenceCoreListe
 
 	@Override
 	public void OnParticipantLeftConference(String arg0) {
+		/* If the other person leaves, we want to leave as well */ 
+		
+		mConferenceCore.leaveConference(ConferenceCoreError.OK);
+
+		
+
 		
 	}
 
