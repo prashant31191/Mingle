@@ -6,6 +6,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.app.Activity;
+import android.content.pm.ActivityInfo;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.util.Log;
@@ -52,7 +53,7 @@ public class ConferenceActivity extends Activity implements IConferenceCoreListe
 	
 		sView = (SurfaceView) findViewById(R.id.mVideo);
 		glView = (GLSurfaceView) findViewById(R.id.uVideo);
-						
+		this.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);				
 		((Button) findViewById(R.id.leaveButton))
 			.setOnClickListener(new View.OnClickListener() {
 				@Override
