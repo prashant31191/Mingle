@@ -46,7 +46,7 @@ public class ConferenceActivity extends Activity implements IConferenceCoreListe
 	private SurfaceView sView;
 	private GLSurfaceView glView;
 	private String participantId;
-
+        /*Steven */ 
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_conference);
