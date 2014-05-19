@@ -91,7 +91,6 @@ public class ConferenceActivity extends Activity implements IConferenceCoreListe
 			@Override
 			public void done(ParseGeoPoint geoPoint, ParseException e) {
 				mLocation = geoPoint;
-				findConference();
 			}
 		});
 		
