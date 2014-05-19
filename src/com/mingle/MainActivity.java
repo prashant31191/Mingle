@@ -67,13 +67,15 @@ public class MainActivity extends Activity {
 									userProfile.put("gender", (String) user.getProperty("gender"));
 								}
 								if(user.getLocation().getProperty("name") != null) {
-									userProfile.put("location", (String) user.getLocation().getProperty("name"));
+									userProfile.put("currentCity", (String) user.getLocation().getProperty("name"));
 								}
 								if(user.getBirthday() != null) {
 									userProfile.put("birthday", user.getBirthday());
 								}
+								
 								ParseUser currentUser = ParseUser.getCurrentUser();
 								currentUser.put("profile", userProfile);
+																								
 								currentUser.saveInBackground();		
 							} catch (JSONException e) {
 								// Error

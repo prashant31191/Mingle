@@ -26,7 +26,9 @@ import com.oovoo.core.Exceptions.NullApplicationContext;
 import com.oovoo.core.ui.VideoRenderer;
 import com.parse.CountCallback;
 import com.parse.FindCallback;
+import com.parse.LocationCallback;
 import com.parse.ParseException;
+import com.parse.ParseGeoPoint;
 import com.parse.ParseObject;
 import com.parse.ParseQuery;
 import com.parse.ParseUser;
@@ -37,6 +39,7 @@ public class ConferenceActivity extends Activity implements IConferenceCoreListe
 	private final String TAG = "MINGLE_CONFERENCE_MANAGER";
 	
 	private ParseUser mUser;
+	private ParseGeoPoint mGeoPoint;
 	private ParseObject mConference;
 	private ParseQuery<ParseObject> mQuery;
 	
@@ -83,20 +86,36 @@ public class ConferenceActivity extends Activity implements IConferenceCoreListe
 		
 		mUser = ParseUser.getCurrentUser();
 		if(mUser != null) {
-			findConference();
+			/* Get the current gps coordinates */
+			ParseGeoPoint.getCurrentLocationInBackground(1000*60, new LocationCallback() {
+				@Override
+				public void done(ParseGeoPoint geoPoint, ParseException e) {
+					if (e == null) {
+						mGeoPoint = geoPoint;
+						mUser.put("location", geoPoint);
+						mUser.saveInBackground(new SaveCallback() {
+							@Override
+							public void done(ParseException e) {
+								findConference();
+							}
+						});
+					} else {
+						e.printStackTrace();
+					}
+				}
+			});					
 		}
 	}	
 	
 	private void onLeaveButtonClicked() {
 		mConferenceCore.leaveConference(ConferenceCoreError.OK);
-
-		
 	}
 
-	private void findConference() {
+	private void findConference() {		
 		mQuery = ParseQuery.getQuery("Conference");
 		mQuery.whereEqualTo("status", "waiting");
 		mQuery.whereNotEqualTo("user1", mUser);
+		mQuery.whereWithinKilometers("location", mGeoPoint, 100);	/* currently set to 100, but will be modified depending on the user's settings */
 		mQuery.countInBackground(new CountCallback() {
 			@Override
 			public void done(int count, ParseException e) {
