@@ -39,7 +39,7 @@ public class ConferenceActivity extends Activity implements IConferenceCoreListe
 	private final String TAG = "MINGLE_CONFERENCE_MANAGER";
 	
 	private ParseUser mUser;
-	private ParseGeoPoint mGeoPoint;
+	private ParseGeoPoint mLocation;
 	private ParseObject mConference;
 	private ParseQuery<ParseObject> mQuery;
 	
@@ -53,7 +53,19 @@ public class ConferenceActivity extends Activity implements IConferenceCoreListe
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_conference);
-	
+
+		mConferenceCore = ConferenceCore.instance(this);
+		mConferenceCore.initSdk("12349983351091",
+				"MDAxMDAxAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAye86PQ2KfCfJmHonCqsMY2YIqMhypD92ZB7iHRMjJ7dQsS8VZm7JOwxPiDSNYMkgR8XPcK0sHWSF6xH12LBS4EiHqWB5OiFxtnL4ZWFNN4KqfxlIQMTW%2FcR%2FdnusGwk%3D",
+				"https://api-sdk.dev.oovoo.com/");
+		
+		try {
+			mConferenceCore.setContext(this);
+			mConferenceCore.setListener(this);
+		} catch (NullApplicationContext e) {
+			e.printStackTrace();
+		}
+		
 		sView = (SurfaceView) findViewById(R.id.mVideo);
 		glView = (GLSurfaceView) findViewById(R.id.uVideo);
 		this.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);				
@@ -67,43 +79,24 @@ public class ConferenceActivity extends Activity implements IConferenceCoreListe
 		
 		sView.setVisibility(View.INVISIBLE);
 		glView.setVisibility(View.INVISIBLE);
-		
-		mConferenceCore = ConferenceCore.instance(this);
-		mConferenceCore.initSdk("12349983351091",
-				"MDAxMDAxAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAye86PQ2KfCfJmHonCqsMY2YIqMhypD92ZB7iHRMjJ7dQsS8VZm7JOwxPiDSNYMkgR8XPcK0sHWSF6xH12LBS4EiHqWB5OiFxtnL4ZWFNN4KqfxlIQMTW%2FcR%2FdnusGwk%3D",
-				"https://api-sdk.dev.oovoo.com/");
-		try {
-			mConferenceCore.setContext(this);
-		} catch (NullApplicationContext e) {
-			
-		}
-		mConferenceCore.setListener(this);
-		
+				
 		mRenderer = new VideoRenderer(glView);
 		glView.setEGLContextClientVersion(2);
 		glView.setRenderer(mRenderer);
 		glView.setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
 		
 		mUser = ParseUser.getCurrentUser();
-		if(mUser != null) {
+		ParseGeoPoint.getCurrentLocationInBackground(1000*60, new LocationCallback() {
+			@Override
+			public void done(ParseGeoPoint geoPoint, ParseException e) {
+				mLocation = geoPoint;
+				findConference();
+			}
+		});
+		
+		if(mUser != null && mLocation != null) {
 			/* Get the current gps coordinates */
-			ParseGeoPoint.getCurrentLocationInBackground(1000*60, new LocationCallback() {
-				@Override
-				public void done(ParseGeoPoint geoPoint, ParseException e) {
-					if (e == null) {
-						mGeoPoint = geoPoint;
-						mUser.put("location", geoPoint);
-						mUser.saveInBackground(new SaveCallback() {
-							@Override
-							public void done(ParseException e) {
-								findConference();
-							}
-						});
-					} else {
-						e.printStackTrace();
-					}
-				}
-			});					
+			findConference();
 		}
 	}	
 	
@@ -115,7 +108,8 @@ public class ConferenceActivity extends Activity implements IConferenceCoreListe
 		mQuery = ParseQuery.getQuery("Conference");
 		mQuery.whereEqualTo("status", "waiting");
 		mQuery.whereNotEqualTo("user1", mUser);
-		mQuery.whereWithinKilometers("location", mGeoPoint, 100);	/* currently set to 100, but will be modified depending on the user's settings */
+		/* currently set to 100, but will be modified depending on the user's settings */
+		mQuery.whereWithinKilometers("location", mLocation, 100);
 		mQuery.countInBackground(new CountCallback() {
 			@Override
 			public void done(int count, ParseException e) {
@@ -172,6 +166,7 @@ public class ConferenceActivity extends Activity implements IConferenceCoreListe
 		mConference.put("lock", 1);
 		mConference.put("user1", mUser);
 		mConference.put("status", "waiting");
+		mConference.put("location", mLocation);
 		mConference.saveInBackground(new SaveCallback() {
 			@Override
 			public void done(ParseException e) {
