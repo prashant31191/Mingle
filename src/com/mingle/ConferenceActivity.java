@@ -86,6 +86,7 @@ public class ConferenceActivity extends Activity implements IConferenceCoreListe
 		glView.setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
 		
 		mUser = ParseUser.getCurrentUser();
+		/* Get the current gps coordinates */
 		ParseGeoPoint.getCurrentLocationInBackground(1000*60, new LocationCallback() {
 			@Override
 			public void done(ParseGeoPoint geoPoint, ParseException e) {
@@ -95,7 +96,6 @@ public class ConferenceActivity extends Activity implements IConferenceCoreListe
 		});
 		
 		if(mUser != null && mLocation != null) {
-			/* Get the current gps coordinates */
 			findConference();
 		}
 	}	
